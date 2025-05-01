@@ -46,10 +46,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
             chrome.storage.local.set({
                 'lastSelectedText': selectedText
             }, () => {
-                // Update the popup badge
-                chrome.action.setBadgeText({ text: "1" });
-                chrome.action.setBadgeBackgroundColor({ color: "#4a6da7" });
-
                 // Open the popup
                 chrome.windows.create({
                     url: 'html/popup.html',
@@ -201,7 +197,8 @@ function createCardBack(info, tab) {
     });
 }
 
-// Context menu
+// Remove the old context menu items
+/*
 chrome.contextMenus.create({
     title: "Create a flashcard for \"%s\"",
     contexts: ["selection"],
@@ -221,9 +218,16 @@ chrome.contextMenus.create({
     parentId: "NEW_CARD",
     onclick: createCardBack
 });
+*/
 
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    if (request.type == "startup") {
+// Listen for messages from content script or popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'textSelected') {
+        // Handle selected text from content script
+        chrome.storage.local.set({
+            'lastSelectedText': request.text
+        });
+    } else if (request.type == "startup") {
         chrome.storage.sync.get(['auth_token'], function (result) {
             if (typeof result === "undefined" || Object.keys(result).length === 0) {
                 session_active = false;

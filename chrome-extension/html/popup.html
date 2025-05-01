@@ -34,15 +34,6 @@
             box-sizing: border-box;
         }
 
-        .hint-input {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
         .tags-input {
             width: 100%;
             padding: 8px;
@@ -55,6 +46,7 @@
         .button-container {
             display: flex;
             gap: 10px;
+            margin-bottom: 15px;
         }
 
         button {
@@ -79,19 +71,31 @@
         button:hover {
             opacity: 0.9;
         }
+
+        .view-cards {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .view-cards a {
+            color: #4a6da7;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .view-cards a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 
 <body>
-    <h2>Flashcards</h2>
+    <h2>Create Flashcard</h2>
     <div class="field-label">Front:</div>
     <textarea id="frontText" placeholder="Enter the front of the flashcard"></textarea>
 
     <div class="field-label">Back:</div>
     <textarea id="backText" placeholder="Enter the back of the flashcard"></textarea>
-
-    <div class="field-label">Hint (optional):</div>
-    <input type="text" id="hintText" class="hint-input" placeholder="Enter a hint">
 
     <div class="field-label">Tags (comma separated):</div>
     <input type="text" id="tagsText" class="tags-input" placeholder="e.g. noun, german">
@@ -99,6 +103,10 @@
     <div class="button-container">
         <button id="saveButton">Save Card</button>
         <button id="clearButton">Clear</button>
+    </div>
+
+    <div class="view-cards">
+        <a href="#" id="viewCardsLink">View Saved Flashcards</a>
     </div>
 </body>
 

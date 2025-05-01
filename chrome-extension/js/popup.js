@@ -1,10 +1,15 @@
 document.addEventListener('DOMContentLoaded', function () {
     const frontText = document.getElementById('frontText');
     const backText = document.getElementById('backText');
-    const hintText = document.getElementById('hintText');
     const tagsText = document.getElementById('tagsText');
     const saveButton = document.getElementById('saveButton');
     const clearButton = document.getElementById('clearButton');
+    const viewCardsLink = document.getElementById('viewCardsLink');
+
+    // Debug: Check if storage is accessible
+    chrome.storage.local.get(null, function (items) {
+        console.log('Current storage contents:', items);
+    });
 
     // Get the last selected text when popup opens
     chrome.storage.local.get(['lastSelectedText'], function (result) {
@@ -23,31 +28,49 @@ document.addEventListener('DOMContentLoaded', function () {
         if (frontText.value.trim() && backText.value.trim()) {
             // Get existing flashcards
             chrome.storage.local.get(['flashcards'], function (result) {
+                // Initialize as empty array if undefined
                 const flashcards = result.flashcards || [];
+                console.log('Current flashcards before adding:', flashcards);
 
-                // Add new flashcard
-                flashcards.push({
+                const newCard = {
                     front: frontText.value.trim(),
                     back: backText.value.trim(),
-                    hint: hintText.value.trim(),
                     tags: tagsText.value.split(',').map(tag => tag.trim()).filter(tag => tag),
                     date: new Date().toISOString()
-                });
+                };
+
+                // Add the new card
+                flashcards.push(newCard);
 
                 // Save updated flashcards
                 chrome.storage.local.set({ 'flashcards': flashcards }, function () {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error saving:', chrome.runtime.lastError);
+                        saveButton.textContent = 'Error: ' + chrome.runtime.lastError.message;
+                        saveButton.style.backgroundColor = '#dc3545';
+                        return;
+                    }
+                    
+                    console.log('Saved flashcard:', newCard);
+                    console.log('Total flashcards:', flashcards.length);
+                    console.log('Updated storage:', flashcards);
+
                     // Clear the last selected text
                     chrome.storage.local.remove(['lastSelectedText']);
-                    // Clear the badge
-                    chrome.action.setBadgeText({ text: '' });
+                    
                     // Show success message
                     saveButton.textContent = 'Saved!';
                     saveButton.style.backgroundColor = '#28a745';
+                    
                     setTimeout(() => {
+                        // Reset button
                         saveButton.textContent = 'Save Card';
                         saveButton.style.backgroundColor = '#4a6da7';
-                        // Clear the form
-                        clearForm();
+                        
+                        // Close the popup window after a delay
+                        setTimeout(() => {
+                            window.close();
+                        }, 500);
                     }, 1000);
                 });
             });
@@ -65,11 +88,51 @@ document.addEventListener('DOMContentLoaded', function () {
     // Clear button click handler
     clearButton.addEventListener('click', clearForm);
 
+    // View cards link handler
+    viewCardsLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        // Get the chrome-extension:// URL for the view.html file
+        const viewUrl = chrome.runtime.getURL('/html/view.html');
+        console.log('Opening view page at:', viewUrl);
+
+        // First try to find if a view window is already open
+        chrome.windows.getAll({ populate: true }, function (windows) {
+            let viewWindow = null;
+            for (let window of windows) {
+                for (let tab of window.tabs) {
+                    if (tab.url === viewUrl) {
+                        viewWindow = window;
+                        break;
+                    }
+                }
+                if (viewWindow) break;
+            }
+
+            if (viewWindow) {
+                // Focus the existing window
+                chrome.windows.update(viewWindow.id, { focused: true });
+            } else {
+                // Create a new window
+                chrome.windows.create({
+                    url: viewUrl,
+                    type: 'popup',
+                    width: 800,
+                    height: 600
+                }, function (window) {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error opening window:', chrome.runtime.lastError);
+                        // Try alternative method
+                        chrome.tabs.create({ url: viewUrl });
+                    }
+                });
+            }
+        });
+    });
+
     // Function to clear the form
     function clearForm() {
         frontText.value = '';
         backText.value = '';
-        hintText.value = '';
         tagsText.value = '';
     }
 

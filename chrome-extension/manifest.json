@@ -18,7 +18,8 @@
         "activeTab",
         "contextMenus",
         "storage",
-        "windows"
+        "windows",
+        "scripting"
     ],
     "host_permissions": [
         "<all_urls>"
@@ -30,6 +31,18 @@
             ],
             "js": [
                 "js/content.js"
+            ]
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "html/*",
+                "js/*",
+                "css/*"
+            ],
+            "matches": [
+                "<all_urls>"
             ]
         }
     ],
