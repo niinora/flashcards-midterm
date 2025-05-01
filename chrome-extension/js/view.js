@@ -54,6 +54,11 @@ function displayFlashcards(flashcards) {
             cardElement.innerHTML = `
                 <div class="flashcard-front">Q: ${escapeHtml(card.front)}</div>
                 <div class="flashcard-back">A: ${escapeHtml(card.back)}</div>
+                ${card.hint ? `<div class="flashcard-hint">Hint: ${escapeHtml(card.hint)}</div>` : ''}
+                <div class="flashcard-buttons">
+                    ${card.hint ? `<button class="flashcard-button hint-button">Show Hint</button>` : ''}
+                    <button class="flashcard-button answer-button">Show Answer</button>
+                </div>
                 ${card.tags && card.tags.length > 0 ? `
                     <div class="flashcard-tags">
                         ${card.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
@@ -61,6 +66,36 @@ function displayFlashcards(flashcards) {
                 ` : ''}
                 <div class="flashcard-date">${formattedDate}</div>
             `;
+
+            // Add click handlers
+            cardElement.addEventListener('click', function (e) {
+                // Toggle active state only if clicking the card itself (not buttons)
+                if (e.target === cardElement || e.target.classList.contains('flashcard-front')) {
+                    this.classList.toggle('active');
+                }
+            });
+
+            // Add button click handlers
+            const hintButton = cardElement.querySelector('.hint-button');
+            const answerButton = cardElement.querySelector('.answer-button');
+            const hintDiv = cardElement.querySelector('.flashcard-hint');
+            const backDiv = cardElement.querySelector('.flashcard-back');
+
+            if (hintButton) {
+                hintButton.addEventListener('click', function (e) {
+                    e.stopPropagation(); // Prevent card click
+                    hintDiv.style.display = hintDiv.style.display === 'block' ? 'none' : 'block';
+                    this.textContent = hintDiv.style.display === 'block' ? 'Hide Hint' : 'Show Hint';
+                });
+            }
+
+            if (answerButton) {
+                answerButton.addEventListener('click', function (e) {
+                    e.stopPropagation(); // Prevent card click
+                    backDiv.style.display = backDiv.style.display === 'block' ? 'none' : 'block';
+                    this.textContent = backDiv.style.display === 'block' ? 'Hide Answer' : 'Show Answer';
+                });
+            }
 
             container.appendChild(cardElement);
         } catch (error) {
@@ -111,6 +146,19 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
     }
 });
 
+// Function to clear all flashcards
+function clearAllFlashcards() {
+    if (confirm('Are you sure you want to delete all flashcards? This action cannot be undone.')) {
+        chrome.storage.local.set({ flashcards: [] }, function () {
+            if (chrome.runtime.lastError) {
+                showError('Error clearing flashcards: ' + chrome.runtime.lastError.message);
+                return;
+            }
+            loadFlashcards(); // Refresh the display
+        });
+    }
+}
+
 // Initialize when the document is loaded
 document.addEventListener('DOMContentLoaded', function () {
     showDebugInfo('View page initialized');
@@ -120,5 +168,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const refreshButton = document.getElementById('refresh-button');
     if (refreshButton) {
         refreshButton.addEventListener('click', loadFlashcards);
+    }
+
+    // Add click event listener to clear button
+    const clearButton = document.getElementById('clear-button');
+    if (clearButton) {
+        clearButton.addEventListener('click', clearAllFlashcards);
     }
 });

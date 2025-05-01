@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const frontText = document.getElementById('frontText');
     const backText = document.getElementById('backText');
+    const hintText = document.getElementById('hintText');
     const tagsText = document.getElementById('tagsText');
     const saveButton = document.getElementById('saveButton');
     const clearButton = document.getElementById('clearButton');
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const newCard = {
                     front: frontText.value.trim(),
                     back: backText.value.trim(),
+                    hint: hintText.value.trim(),
                     tags: tagsText.value.split(',').map(tag => tag.trim()).filter(tag => tag),
                     date: new Date().toISOString()
                 };
@@ -50,23 +52,23 @@ document.addEventListener('DOMContentLoaded', function () {
                         saveButton.style.backgroundColor = '#dc3545';
                         return;
                     }
-                    
+
                     console.log('Saved flashcard:', newCard);
                     console.log('Total flashcards:', flashcards.length);
                     console.log('Updated storage:', flashcards);
 
                     // Clear the last selected text
                     chrome.storage.local.remove(['lastSelectedText']);
-                    
+
                     // Show success message
                     saveButton.textContent = 'Saved!';
                     saveButton.style.backgroundColor = '#28a745';
-                    
+
                     setTimeout(() => {
                         // Reset button
                         saveButton.textContent = 'Save Card';
                         saveButton.style.backgroundColor = '#4a6da7';
-                        
+
                         // Close the popup window after a delay
                         setTimeout(() => {
                             window.close();
@@ -133,6 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function clearForm() {
         frontText.value = '';
         backText.value = '';
+        hintText.value = '';
         tagsText.value = '';
     }
 
