@@ -37,8 +37,8 @@ function displayFlashcards(flashcards) {
     noCards.style.display = 'none';
     container.style.display = 'block';
 
-    // Display flashcards in reverse chronological order
-    const sortedCards = [...flashcards].sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Display flashcards in chronological order (oldest first)
+    const sortedCards = [...flashcards];
 
     sortedCards.forEach((card, index) => {
         showDebugInfo(`Displaying card ${index + 1}:`);
@@ -46,13 +46,17 @@ function displayFlashcards(flashcards) {
 
         const cardElement = document.createElement('div');
         cardElement.className = 'flashcard';
+        cardElement.dataset.cardIndex = index; // Store the original index
 
         try {
             const date = new Date(card.date);
             const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 
             cardElement.innerHTML = `
-                <div class="flashcard-front">Flashcard #${flashcards.length - index}: ${escapeHtml(card.front)}</div>
+                <div class="flashcard-front">
+                    <div class="flashcard-front-text">Flashcard #${index + 1}: ${escapeHtml(card.front)}</div>
+                    ${card.status ? `<span class="status-badge ${card.status}-status">${card.status}</span>` : ''}
+                </div>
                 <div class="flashcard-back">A: ${escapeHtml(card.back)}</div>
                 ${card.hint ? `<div class="flashcard-hint">Hint: ${escapeHtml(card.hint)}</div>` : ''}
                 <div class="flashcard-buttons">
@@ -62,9 +66,9 @@ function displayFlashcards(flashcards) {
                 <div class="difficulty-section">
                     <div class="difficulty-question">How difficult was this card?</div>
                     <div class="difficulty-buttons">
-                        <button class="difficulty-button wrong-button">Wrong</button>
-                        <button class="difficulty-button hard-button">Hard</button>
-                        <button class="difficulty-button easy-button">Easy</button>
+                        <button class="difficulty-button wrong-button" data-status="wrong">Wrong</button>
+                        <button class="difficulty-button hard-button" data-status="hard">Hard</button>
+                        <button class="difficulty-button easy-button" data-status="easy">Easy</button>
                     </div>
                 </div>
                 ${card.tags && card.tags.length > 0 ? `
@@ -116,35 +120,61 @@ function displayFlashcards(flashcards) {
                 button.addEventListener('click', function (e) {
                     e.stopPropagation(); // Prevent card click
 
-                    // Get the difficulty from the button's class
-                    const difficulty = this.classList.contains('wrong-button') ? 'wrong' :
-                        this.classList.contains('hard-button') ? 'hard' : 'easy';
+                    // Get the status from the button's data attribute
+                    const newStatus = this.dataset.status;
+                    console.log('Attempting to update card status to:', newStatus);
 
-                    // Update the card's difficulty in storage
+                    // Get the original index from the card element
+                    const cardIndex = parseInt(cardElement.dataset.cardIndex);
+                    console.log('Updating card at index:', cardIndex);
+
+                    // Update the card's status in storage
                     chrome.storage.local.get(['flashcards'], function (result) {
                         const flashcards = result.flashcards || [];
-                        const cardIndex = flashcards.findIndex(c =>
-                            c.front === card.front &&
-                            c.back === card.back &&
-                            c.date === card.date
-                        );
+                        console.log('Current flashcards:', flashcards);
 
-                        if (cardIndex !== -1) {
-                            // Update or add the difficulty and last reviewed date
-                            flashcards[cardIndex].difficulty = difficulty;
+                        if (cardIndex >= 0 && cardIndex < flashcards.length) {
+                            // Update the card's status and last reviewed date
+                            flashcards[cardIndex].status = newStatus;
                             flashcards[cardIndex].lastReviewed = new Date().toISOString();
+
+                            console.log('Updated flashcard:', flashcards[cardIndex]);
 
                             // Save back to storage
                             chrome.storage.local.set({ flashcards: flashcards }, function () {
                                 if (chrome.runtime.lastError) {
-                                    showError('Error saving difficulty: ' + chrome.runtime.lastError.message);
+                                    console.error('Error saving status:', chrome.runtime.lastError);
+                                    showError('Error saving status: ' + chrome.runtime.lastError.message);
                                     return;
                                 }
 
-                                // Visual feedback
-                                difficultyButtons.forEach(btn => btn.style.opacity = '0.5');
+                                console.log('Successfully saved updated flashcards');
+
+                                // Update the status badge in the UI
+                                const frontDiv = cardElement.querySelector('.flashcard-front');
+                                let statusBadge = cardElement.querySelector('.status-badge');
+
+                                if (!statusBadge) {
+                                    statusBadge = document.createElement('span');
+                                    statusBadge.className = 'status-badge';
+                                    frontDiv.appendChild(statusBadge);
+                                }
+
+                                // Update badge
+                                statusBadge.textContent = newStatus;
+                                statusBadge.className = `status-badge ${newStatus}-status`;
+
+                                // Visual feedback on buttons
+                                difficultyButtons.forEach(btn => {
+                                    btn.classList.remove('selected');
+                                    btn.style.opacity = '0.5';
+                                });
+                                button.classList.add('selected');
                                 button.style.opacity = '1';
                             });
+                        } else {
+                            console.error('Invalid card index:', cardIndex);
+                            showError('Error: Could not find card to update');
                         }
                     });
                 });
