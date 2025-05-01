@@ -1,0 +1,41 @@
+{
+    "name": "Midterm Flashcards",
+    "version": "1.0.0",
+    "description": "Quickly create flashcards by highlighting text on any webpage",
+    "manifest_version": 3,
+    "background": {
+        "service_worker": "js/background.js"
+    },
+    "action": {
+        "default_popup": "html/popup.html",
+        "default_icon": {
+            "16": "assets/extension-icons/logo-16.png",
+            "48": "assets/extension-icons/logo-48.png",
+            "128": "assets/extension-icons/logo-128.png"
+        }
+    },
+    "permissions": [
+        "activeTab",
+        "contextMenus",
+        "storage",
+        "windows"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "js/content.js"
+            ]
+        }
+    ],
+    "icons": {
+        "16": "assets/extension-icons/logo-16.png",
+        "48": "assets/extension-icons/logo-48.png",
+        "128": "assets/extension-icons/logo-128.png"
+    }
+}
