@@ -52,12 +52,20 @@ function displayFlashcards(flashcards) {
             const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 
             cardElement.innerHTML = `
-                <div class="flashcard-front">Q: ${escapeHtml(card.front)}</div>
+                <div class="flashcard-front">Flashcard #${flashcards.length - index}: ${escapeHtml(card.front)}</div>
                 <div class="flashcard-back">A: ${escapeHtml(card.back)}</div>
                 ${card.hint ? `<div class="flashcard-hint">Hint: ${escapeHtml(card.hint)}</div>` : ''}
                 <div class="flashcard-buttons">
                     ${card.hint ? `<button class="flashcard-button hint-button">Show Hint</button>` : ''}
                     <button class="flashcard-button answer-button">Show Answer</button>
+                </div>
+                <div class="difficulty-section">
+                    <div class="difficulty-question">How difficult was this card?</div>
+                    <div class="difficulty-buttons">
+                        <button class="difficulty-button wrong-button">Wrong</button>
+                        <button class="difficulty-button hard-button">Hard</button>
+                        <button class="difficulty-button easy-button">Easy</button>
+                    </div>
                 </div>
                 ${card.tags && card.tags.length > 0 ? `
                     <div class="flashcard-tags">
@@ -80,6 +88,7 @@ function displayFlashcards(flashcards) {
             const answerButton = cardElement.querySelector('.answer-button');
             const hintDiv = cardElement.querySelector('.flashcard-hint');
             const backDiv = cardElement.querySelector('.flashcard-back');
+            const difficultySection = cardElement.querySelector('.difficulty-section');
 
             if (hintButton) {
                 hintButton.addEventListener('click', function (e) {
@@ -92,10 +101,54 @@ function displayFlashcards(flashcards) {
             if (answerButton) {
                 answerButton.addEventListener('click', function (e) {
                     e.stopPropagation(); // Prevent card click
-                    backDiv.style.display = backDiv.style.display === 'block' ? 'none' : 'block';
-                    this.textContent = backDiv.style.display === 'block' ? 'Hide Answer' : 'Show Answer';
+                    const isShowingAnswer = backDiv.style.display !== 'block';
+                    backDiv.style.display = isShowingAnswer ? 'block' : 'none';
+                    this.textContent = isShowingAnswer ? 'Hide Answer' : 'Show Answer';
+
+                    // Show/hide difficulty section based on answer visibility
+                    difficultySection.style.display = isShowingAnswer ? 'block' : 'none';
                 });
             }
+
+            // Add difficulty button handlers
+            const difficultyButtons = cardElement.querySelectorAll('.difficulty-button');
+            difficultyButtons.forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.stopPropagation(); // Prevent card click
+
+                    // Get the difficulty from the button's class
+                    const difficulty = this.classList.contains('wrong-button') ? 'wrong' :
+                        this.classList.contains('hard-button') ? 'hard' : 'easy';
+
+                    // Update the card's difficulty in storage
+                    chrome.storage.local.get(['flashcards'], function (result) {
+                        const flashcards = result.flashcards || [];
+                        const cardIndex = flashcards.findIndex(c =>
+                            c.front === card.front &&
+                            c.back === card.back &&
+                            c.date === card.date
+                        );
+
+                        if (cardIndex !== -1) {
+                            // Update or add the difficulty and last reviewed date
+                            flashcards[cardIndex].difficulty = difficulty;
+                            flashcards[cardIndex].lastReviewed = new Date().toISOString();
+
+                            // Save back to storage
+                            chrome.storage.local.set({ flashcards: flashcards }, function () {
+                                if (chrome.runtime.lastError) {
+                                    showError('Error saving difficulty: ' + chrome.runtime.lastError.message);
+                                    return;
+                                }
+
+                                // Visual feedback
+                                difficultyButtons.forEach(btn => btn.style.opacity = '0.5');
+                                button.style.opacity = '1';
+                            });
+                        }
+                    });
+                });
+            });
 
             container.appendChild(cardElement);
         } catch (error) {
