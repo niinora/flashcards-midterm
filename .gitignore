@@ -1,15 +1,10 @@
-# System Files
+# Ignore macOS system files
 .DS_Store
-Thumbs.db
 
-# IDE Files
+# Ignore IDE files
 .idea/
-.vscode/
-*.sublime-project
-*.sublime-workspace
+*.iml
 
-# Logs
-*.log
-
-# Dependencies
+# Ignore build artifacts
 node_modules/
+dist/
